@@ -1,0 +1,1231 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Eventzone — Event Price Calculator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #07090f;
+      --surface: #0f1219;
+      --surface2: #161b26;
+      --border: rgba(255, 255, 255, 0.07);
+      --border-hover: rgba(43, 127, 255, 0.4);
+      --blue: #2B7FFF;
+      --blue-glow: rgba(43, 127, 255, 0.15);
+      --blue-soft: rgba(43, 127, 255, 0.08);
+      --text: #f0f2f7;
+      --text-muted: #6b7592;
+      --text-sub: #a0a8c0;
+      --green: #22d08a;
+      --accent: #e8edff;
+      --radius: 14px;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Space Grotesk', sans-serif;
+      min-height: 100vh;
+      padding: 40px 20px 80px;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      top: -200px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 800px;
+      height: 500px;
+      background: radial-gradient(ellipse at center, rgba(43, 127, 255, 0.07) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .wrapper {
+      max-width: 1100px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 1;
+    }
+
+    .main-layout {
+      display: flex;
+      gap: 24px;
+      align-items: flex-start;
+    }
+
+    .main-left {
+      flex: 1.4;
+      min-width: 0;
+    }
+
+    .main-right {
+      flex: 1;
+      position: sticky;
+      top: 24px;
+    }
+
+    @media (max-width: 900px) {
+      .main-layout {
+        flex-direction: column;
+      }
+
+      .main-right {
+        position: static;
+        width: 100%;
+      }
+    }
+
+    /* HEADER */
+    .header {
+      text-align: center;
+      margin-bottom: 48px;
+    }
+
+    .logo img {
+      height: 48px;
+      width: auto;
+      display: block;
+      filter: brightness(0) invert(1);
+      margin: 0 auto 20px;
+    }
+
+    h1 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: clamp(28px, 5vw, 42px);
+      font-weight: 700;
+      letter-spacing: -1px;
+      line-height: 1.1;
+      margin-bottom: 12px;
+    }
+
+    h1 em {
+      font-style: normal;
+      color: var(--blue);
+    }
+
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 15px;
+      font-weight: 300;
+      margin-bottom: 24px;
+    }
+
+    /* VIEW SELECTOR */
+    .view-selector {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 32px;
+      background: var(--surface);
+      padding: 6px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      width: fit-content;
+      margin: 0 auto 32px;
+    }
+
+    .view-selector button {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 8px 24px;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .view-selector button.active {
+      background: var(--blue);
+      color: white;
+      box-shadow: 0 4px 12px rgba(43, 127, 255, 0.3);
+    }
+
+    /* CARD */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 32px;
+      margin-bottom: 16px;
+      transition: border-color 0.3s;
+    }
+
+    .card:hover {
+      border-color: rgba(43, 127, 255, 0.15);
+    }
+
+    .card-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--blue);
+      margin-bottom: 24px;
+    }
+
+    /* SLIDER ROW */
+    .slider-row {
+      margin-bottom: 28px;
+    }
+
+    .slider-row:last-child {
+      margin-bottom: 0;
+    }
+
+    .slider-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .slider-label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-sub);
+    }
+
+    .slider-icon {
+      width: 30px;
+      height: 30px;
+      background: var(--blue-soft);
+      border: 1px solid rgba(43, 127, 255, 0.2);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+
+    .slider-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .slider-value {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text);
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      width: 70px;
+      padding: 2px 8px;
+      text-align: center;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .slider-value:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 2px var(--blue-glow);
+    }
+
+    .slider-value::-webkit-inner-spin-button,
+    .slider-value::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
+    .slider-unit-price {
+      font-size: 11px;
+      color: var(--text-muted);
+      padding: 3px 8px;
+      background: var(--surface2);
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      white-space: nowrap;
+    }
+
+    .slider-subtotal {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--green);
+      min-width: 70px;
+      text-align: right;
+    }
+
+    /* RANGE INPUT */
+    input[type=range] {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 4px;
+      background: var(--surface2);
+      border-radius: 4px;
+      outline: none;
+      cursor: pointer;
+      position: relative;
+    }
+
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 20px;
+      height: 20px;
+      background: var(--blue);
+      border-radius: 50%;
+      border: 3px solid var(--bg);
+      box-shadow: 0 0 0 1px var(--blue), 0 4px 12px rgba(43, 127, 255, 0.4);
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+
+    input[type=range]:hover::-webkit-slider-thumb {
+      transform: scale(1.15);
+      box-shadow: 0 0 0 1px var(--blue), 0 4px 20px rgba(43, 127, 255, 0.6);
+    }
+
+    input[type=range]::-moz-range-thumb {
+      width: 20px;
+      height: 20px;
+      background: var(--blue);
+      border-radius: 50%;
+      border: 3px solid var(--bg);
+      box-shadow: 0 0 0 1px var(--blue);
+      cursor: pointer;
+    }
+
+    /* TRACK FILL — done via JS inline gradient */
+
+    /* CLIENT INFO */
+    .fields-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    @media (max-width: 560px) {
+      .fields-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .field-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .field-group label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .field-group input,
+    .field-group textarea {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      color: var(--text);
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+      resize: none;
+    }
+
+    .field-group input:focus,
+    .field-group textarea:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px var(--blue-glow);
+    }
+
+    .field-group textarea {
+      min-height: 70px;
+    }
+
+    /* SUMMARY CARD */
+    .summary-card {
+      background: linear-gradient(135deg, #0f1a2e 0%, #0a1220 100%);
+      border: 1px solid rgba(43, 127, 255, 0.25);
+      border-radius: var(--radius);
+      padding: 32px;
+      margin-bottom: 16px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .summary-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 200px;
+      height: 200px;
+      background: radial-gradient(circle, rgba(43, 127, 255, 0.08) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .summary-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--blue);
+      margin-bottom: 20px;
+    }
+
+    .line-items {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .line-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 12px;
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+
+    .line-item.hidden {
+      display: none;
+    }
+
+    .line-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--text-sub);
+    }
+
+    .line-qty {
+      font-size: 11px;
+      color: var(--text-muted);
+      background: var(--surface2);
+      padding: 2px 7px;
+      border-radius: 4px;
+    }
+
+    .line-amount {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 16px 0;
+    }
+
+    .total-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .total-label {
+      font-size: 14px;
+      color: var(--text-muted);
+      font-weight: 300;
+    }
+
+    .total-amount {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 38px;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -1px;
+    }
+
+    .total-amount span {
+      font-size: 20px;
+      color: var(--text-muted);
+      font-weight: 300;
+    }
+
+    /* BUTTON */
+    .btn-print {
+      width: 100%;
+      padding: 16px;
+      background: var(--blue);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: all 0.2s;
+      letter-spacing: -0.2px;
+    }
+
+    .btn-print:hover {
+      background: #3d8fff;
+      transform: translateY(-1px);
+      box-shadow: 0 8px 24px rgba(43, 127, 255, 0.35);
+    }
+
+    .btn-print:active {
+      transform: translateY(0);
+    }
+
+    .note {
+      text-align: center;
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 12px;
+    }
+
+    .profit-badge {
+      margin-top: 24px;
+      background: rgba(34, 208, 138, 0.07);
+      border: 1px solid rgba(34, 208, 138, 0.2);
+      padding: 16px;
+      border-radius: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      backdrop-filter: blur(10px);
+    }
+
+    .profit-label {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .profit-label span:first-child {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--green);
+      font-weight: 700;
+    }
+
+    .profit-label span:last-child {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .profit-value {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--green);
+    }
+
+    /* ============ PRINT STYLES ============ */
+    @media print {
+      body {
+        background: #fff !important;
+        color: #111 !important;
+        padding: 0 !important;
+        font-family: 'Space Grotesk', sans-serif;
+      }
+
+      .no-print {
+        display: none !important;
+      }
+
+      .wrapper {
+        max-width: 100%;
+      }
+
+      .header {
+        margin-bottom: 24px;
+      }
+
+      .logo img {
+        filter: none !important;
+      }
+
+      .logo-name {
+        color: #111 !important;
+      }
+
+      .logo-icon {
+        background: #2B7FFF !important;
+      }
+
+      h1 {
+        color: #111 !important;
+        font-size: 26px !important;
+      }
+
+      h1 em {
+        color: #2B7FFF !important;
+      }
+
+      .subtitle {
+        color: #555 !important;
+      }
+
+      .card {
+        background: #fff !important;
+        border: 1px solid #e0e4ef !important;
+        padding: 20px !important;
+        margin-bottom: 12px !important;
+        page-break-inside: avoid;
+      }
+
+      .card-title {
+        color: #2B7FFF !important;
+      }
+
+      .slider-label {
+        color: #333 !important;
+      }
+
+      .slider-value {
+        color: #111 !important;
+      }
+
+      .slider-subtotal {
+        color: #1a9e6a !important;
+      }
+
+      .slider-unit-price {
+        background: #f4f6fc !important;
+        color: #666 !important;
+        border-color: #dde2f0 !important;
+      }
+
+      .slider-icon {
+        background: #eef3ff !important;
+        border-color: #c8d9ff !important;
+      }
+
+      input[type=range] {
+        display: none !important;
+      }
+
+      .slider-row {
+        margin-bottom: 14px !important;
+      }
+
+      .summary-card {
+        background: #f8faff !important;
+        border: 1.5px solid #2B7FFF !important;
+        page-break-inside: avoid;
+      }
+
+      .summary-title {
+        color: #2B7FFF !important;
+      }
+
+      .line-item {
+        background: #f4f6fc !important;
+        border-color: #e0e4ef !important;
+      }
+
+      .line-left {
+        color: #333 !important;
+      }
+
+      .line-qty {
+        background: #e8ecf8 !important;
+        color: #555 !important;
+      }
+
+      .line-amount {
+        color: #111 !important;
+      }
+
+      .divider {
+        background: #dde2ef !important;
+      }
+
+      .total-label {
+        color: #555 !important;
+      }
+
+      .total-amount {
+        color: #111 !important;
+        font-size: 32px !important;
+      }
+
+      .total-amount span {
+        color: #888 !important;
+      }
+
+      .fields-grid input,
+      .fields-grid textarea {
+        background: #fff !important;
+        border-color: #dde2ef !important;
+        color: #111 !important;
+      }
+
+      .field-group label {
+        color: #555 !important;
+      }
+
+      .card-title {
+        page-break-after: avoid;
+      }
+
+      .btn-print {
+        display: none !important;
+      }
+
+      .note {
+        display: none !important;
+      }
+
+      /* Print watermark */
+      .summary-card::after {
+        content: 'eventzone.pro';
+        position: absolute;
+        bottom: 16px;
+        right: 20px;
+        font-size: 11px;
+        color: rgba(43, 127, 255, 0.4) !important;
+        letter-spacing: 1px;
+      }
+
+      /* Slider value display for print */
+      .print-value-bar {
+        display: flex !important;
+        height: 4px;
+        background: #e0e4ef;
+        border-radius: 4px;
+        margin-top: 6px;
+        overflow: hidden;
+      }
+
+      .print-value-bar-fill {
+        background: #2B7FFF;
+        border-radius: 4px;
+        transition: width 0s;
+      }
+    }
+
+    @media screen {
+      .print-value-bar {
+        display: none;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="wrapper">
+
+    <!-- HEADER -->
+    <div class="header">
+      <div class="logo">
+        <img src="https://i.imgur.com/jFDrQbM.png" alt="Eventzone Logo">
+      </div>
+      <h1>Event <em>Price</em> Calculator</h1>
+      <p class="subtitle">Adjust the sliders to configure your event — get an instant quote.</p>
+
+      <div class="view-selector no-print">
+        <button id="viewClient" class="active" onclick="setView('client')">Client Quote</button>
+        <button id="viewInternal" onclick="setView('internal')">Internal Cost</button>
+      </div>
+    </div>
+
+
+
+    <div class="main-layout">
+      <div class="main-left">
+        <!-- SLIDERS -->
+        <div class="card">
+          <div class="card-title">⚙️ Event Configuration</div>
+
+          <!-- Attendees -->
+          <div class="slider-row">
+            <div class="slider-header">
+              <div class="slider-label">
+                <div class="slider-icon">👥</div>
+                Attendees
+              </div>
+              <div class="slider-meta">
+                <div class="slider-unit-price" id="priceAttendees">100 DZD / person</div>
+                <input type="number" class="slider-value" id="valAttendees" value="50" min="0" max="50000">
+                <div class="slider-subtotal" id="subAttendees">5 000 DZD</div>
+              </div>
+            </div>
+            <input type="range" id="sliderAttendees" min="0" max="50000" step="50" value="50">
+            <div class="print-value-bar">
+              <div class="print-value-bar-fill" id="barAttendees"></div>
+            </div>
+          </div>
+
+          <!-- Hosts/Hostesses -->
+          <div class="slider-row">
+            <div class="slider-header">
+              <div class="slider-label">
+                <div class="slider-icon">🎀</div>
+                Hosts / Hostesses
+              </div>
+              <div class="slider-meta">
+                <div class="slider-unit-price" id="priceHosts">7 000 DZD / person</div>
+                <input type="number" class="slider-value" id="valHosts" value="2" min="0" max="50">
+                <div class="slider-subtotal" id="subHosts">14 000 DZD</div>
+              </div>
+            </div>
+            <input type="range" id="sliderHosts" min="0" max="50" step="1" value="2">
+            <div class="print-value-bar">
+              <div class="print-value-bar-fill" id="barHosts"></div>
+            </div>
+          </div>
+
+          <!-- PCs -->
+          <div class="slider-row">
+            <div class="slider-header">
+              <div class="slider-label">
+                <div class="slider-icon">💻</div>
+                PCs / Laptops
+              </div>
+              <div class="slider-meta">
+                <div class="slider-unit-price" id="pricePCs">4 000 DZD / unit</div>
+                <input type="number" class="slider-value" id="valPCs" value="1" min="0" max="50">
+                <div class="slider-subtotal" id="subPCs">4 000 DZD</div>
+              </div>
+            </div>
+            <input type="range" id="sliderPCs" min="0" max="50" step="1" value="1">
+            <div class="print-value-bar">
+              <div class="print-value-bar-fill" id="barPCs"></div>
+            </div>
+          </div>
+
+          <!-- Printers -->
+          <div class="slider-row">
+            <div class="slider-header">
+              <div class="slider-label">
+                <div class="slider-icon">🖨️</div>
+                Printers
+              </div>
+              <div class="slider-meta">
+                <div class="slider-unit-price" id="pricePrinters">5 000 DZD / unit</div>
+                <input type="number" class="slider-value" id="valPrinters" value="1" min="0" max="50">
+                <div class="slider-subtotal" id="subPrinters">5 000 DZD</div>
+              </div>
+            </div>
+            <input type="range" id="sliderPrinters" min="0" max="50" step="1" value="1">
+            <div class="print-value-bar">
+              <div class="print-value-bar-fill" id="barPrinters"></div>
+            </div>
+          </div>
+
+          <!-- Standard Badges -->
+          <div class="slider-row">
+            <div class="slider-header">
+              <div class="slider-label">
+                <div class="slider-icon">🪪</div>
+                Standard Badges
+              </div>
+              <div class="slider-meta">
+                <div class="slider-unit-price" id="priceBadges">60 DZD / badge</div>
+                <input type="number" class="slider-value" id="valBadges" value="50" min="0" max="50000">
+                <div class="slider-subtotal" id="subBadges">3 000 DZD</div>
+              </div>
+            </div>
+            <input type="range" id="sliderBadges" min="0" max="50000" step="50" value="50">
+            <div class="print-value-bar">
+              <div class="print-value-bar-fill" id="barBadges"></div>
+            </div>
+          </div>
+
+          <!-- VIP Badges -->
+          <div class="slider-row">
+            <div class="slider-header">
+              <div class="slider-label">
+                <div class="slider-icon">⭐</div>
+                VIP Badges
+              </div>
+              <div class="slider-meta">
+                <div class="slider-unit-price" id="priceVip">250 DZD / badge</div>
+                <input type="number" class="slider-value" id="valVip" value="0" min="0" max="50000">
+                <div class="slider-subtotal" id="subVip">0 DZD</div>
+              </div>
+            </div>
+            <input type="range" id="sliderVip" min="0" max="50000" step="50" value="0">
+            <div class="print-value-bar">
+              <div class="print-value-bar-fill" id="barVip"></div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- PRICING CONFIG (editable, no-print) -->
+        <div class="card no-print" style="border-style: dashed;">
+          <div class="card-title">🔧 Pricing Configuration <span
+              style="color:var(--text-muted);font-size:10px;font-weight:400;letter-spacing:0;text-transform:none;margin-left:6px;">—
+              edit unit prices below</span></div>
+          <div class="fields-grid">
+            <div class="field-group">
+              <label>Price per Attendee (DZD)</label>
+              <input type="number" id="cfgAttendees" value="100" min="0">
+            </div>
+            <div class="field-group">
+              <label>Price per Host/Hostess (DZD)</label>
+              <input type="number" id="cfgHosts" value="7000" min="0">
+            </div>
+            <div class="field-group">
+              <label>Price per PC (DZD)</label>
+              <input type="number" id="cfgPCs" value="4000" min="0">
+            </div>
+            <div class="field-group">
+              <label>Price per Printer (DZD)</label>
+              <input type="number" id="cfgPrinters" value="5000" min="0">
+            </div>
+            <div class="field-group">
+              <label>Price per Standard Badge (DZD)</label>
+              <input type="number" id="cfgBadges" value="60" min="0">
+            </div>
+            <div class="field-group">
+              <label>Price per VIP Badge (DZD)</label>
+              <input type="number" id="cfgVip" value="250" min="0">
+            </div>
+            <div class="field-group">
+              <label>Platform Fee (DZD)</label>
+              <input type="number" id="cfgPlatform" value="15000" min="0">
+            </div>
+          </div>
+        </div>
+
+      </div> <!-- end .main-left -->
+
+      <div class="main-right">
+        <!-- SUMMARY -->
+        <div class="summary-card">
+          <div class="summary-title">💰 Quote Summary</div>
+
+          <div class="line-items">
+            <div class="line-item" id="liAttendees">
+              <div class="line-left">
+                <span>👥 Attendees</span>
+                <span class="line-qty" id="lqAttendees">×50</span>
+              </div>
+              <div class="line-amount" id="laAttendees">5 000 DZD</div>
+            </div>
+            <div class="line-item" id="liHosts">
+              <div class="line-left">
+                <span>🎀 Hosts / Hostesses</span>
+                <span class="line-qty" id="lqHosts">×2</span>
+              </div>
+              <div class="line-amount" id="laHosts">7 000 DZD</div>
+            </div>
+            <div class="line-item" id="liPCs">
+              <div class="line-left">
+                <span>💻 PCs / Laptops</span>
+                <span class="line-qty" id="lqPCs">×1</span>
+              </div>
+              <div class="line-amount" id="laPCs">5 000 DZD</div>
+            </div>
+            <div class="line-item" id="liPrinters">
+              <div class="line-left">
+                <span>🖨️ Printers</span>
+                <span class="line-qty" id="lqPrinters">×1</span>
+              </div>
+              <div class="line-amount" id="laPrinters">4 000 DZD</div>
+            </div>
+            <div class="line-item" id="liBadges">
+              <div class="line-left">
+                <span>🪪 Standard Badges</span>
+                <span class="line-qty" id="lqBadges">×50</span>
+              </div>
+              <div class="line-amount" id="laBadges">3 000 DZD</div>
+            </div>
+            <div class="line-item" id="liVip">
+              <div class="line-left">
+                <span>⭐ VIP Badges</span>
+                <span class="line-qty" id="lqVip">×0</span>
+              </div>
+              <div class="line-amount" id="laVip">0 DZD</div>
+            </div>
+            <div class="line-item" id="liPlatform">
+              <div class="line-left">
+                <span>⚡ Platform Fee</span>
+                <span class="line-qty" id="lqPlatform">base</span>
+              </div>
+              <div class="line-amount" id="laPlatform">15 000 DZD</div>
+            </div>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="total-row">
+            <div>
+              <div class="total-label">Total Estimate</div>
+              <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">Taxes not included</div>
+            </div>
+            <div class="total-amount" id="totalAmount">46 000 <span>DZD</span></div>
+          </div>
+
+          <!-- Profit Tracking -->
+          <div class="profit-badge no-print" id="profitRow">
+            <div class="profit-label">
+              <span>📈 Estimated Profit</span>
+              <span id="marginLabel">Margin: 0%</span>
+            </div>
+            <div class="profit-value" id="valProfit">0 DZD</div>
+          </div>
+        </div>
+
+        <!-- PRINT BUTTON -->
+        <button class="btn-print no-print" onclick="printQuote()">
+          <span>🖨️</span> Print / Save Quote as PDF
+        </button>
+        <p class="note no-print">Opens print dialog — choose "Save as PDF" to export.</p>
+
+      </div> <!-- end .main-right -->
+    </div> <!-- end .main-layout -->
+  </div> <!-- end .wrapper -->
+
+  <script>
+    // ── CONFIG ──────────────────────────────────────────────
+    let currentView = 'client';
+
+    const cfg = {
+      client: {
+        attendees: 100,
+        hosts: 7000,
+        pcs: 4000,
+        printers: 5000,
+        badges: 60,
+        vip: 250,
+        platform: 15000
+      },
+      internal: {
+        attendees: 10,
+        hosts: 4500,
+        pcs: 3000,
+        printers: 3000,
+        badges: 40,
+        vip: 200,
+        platform: 5000
+      }
+    };
+
+    function setView(v) {
+      currentView = v;
+      document.getElementById('viewClient').classList.toggle('active', v === 'client');
+      document.getElementById('viewInternal').classList.toggle('active', v === 'internal');
+
+      // Update config inputs to match the view
+      const data = cfg[currentView];
+      document.getElementById('cfgAttendees').value = data.attendees;
+      document.getElementById('cfgHosts').value = data.hosts;
+      document.getElementById('cfgPCs').value = data.pcs;
+      document.getElementById('cfgPrinters').value = data.printers;
+      document.getElementById('cfgBadges').value = data.badges;
+      document.getElementById('cfgVip').value = data.vip;
+      document.getElementById('cfgPlatform').value = data.platform;
+
+      update();
+    }
+
+    // ── HELPERS ─────────────────────────────────────────────
+    function fmt(n) {
+      return n.toLocaleString('fr-DZ') + ' DZD';
+    }
+
+    function setTrack(el) {
+      const min = parseFloat(el.min);
+      const max = parseFloat(el.max);
+      const val = parseFloat(el.value);
+      const pct = ((val - min) / (max - min)) * 100;
+      el.style.background = `linear-gradient(to right, #2B7FFF ${pct}%, #161b26 ${pct}%)`;
+      return pct;
+    }
+
+    function updateBar(barId, pct) {
+      const bar = document.getElementById(barId);
+      if (bar) bar.style.width = pct + '%';
+    }
+
+    // ── MAIN UPDATE ─────────────────────────────────────────
+    function update() {
+      const qA = parseInt(document.getElementById('sliderAttendees').value);
+      const activeCfg = cfg[currentView];
+
+      // Dynamic Attendee Pricing Logic (Client view only or both?)
+      // Let's keep it for Client view, perhaps fixed for Internal or scaled differently?
+      // User requested "dynamic" earlier, so let's check currentView
+      if (currentView === 'client') {
+        if (qA <= 1000) activeCfg.attendees = 100;
+        else if (qA <= 5000) activeCfg.attendees = 60;
+        else activeCfg.attendees = 40;
+      }
+
+      // Update config input if it exists
+      const attInput = document.getElementById('cfgAttendees');
+      if (attInput) attInput.value = activeCfg.attendees;
+
+      const qH = parseInt(document.getElementById('sliderHosts').value);
+      const qP = parseInt(document.getElementById('sliderPCs').value);
+      const qPr = parseInt(document.getElementById('sliderPrinters').value);
+      const qB = parseInt(document.getElementById('sliderBadges').value);
+      const qV = parseInt(document.getElementById('sliderVip').value);
+
+      // Calculate BOTH totals for profit tracking
+      const getAttPrice = (view, qty) => {
+        if (view === 'client') {
+          if (qty <= 1000) return 100;
+          if (qty <= 5000) return 60;
+          return 40;
+        }
+        return cfg.internal.attendees;
+      };
+
+      const calcTotal = (view) => {
+        const p = cfg[view];
+        const a = getAttPrice(view, qA);
+        return (qA * a) + (qH * p.hosts) + (qP * p.pcs) + (qPr * p.printers) + (qB * p.badges) + (qV * p.vip) + p.platform;
+      };
+
+      const totalClient = calcTotal('client');
+      const totalInternal = calcTotal('internal');
+      const total = currentView === 'client' ? totalClient : totalInternal;
+      const profit = totalClient - totalInternal;
+      const margin = totalClient > 0 ? Math.round((profit / totalClient) * 100) : 0;
+
+      const subA = qA * getAttPrice(currentView, qA);
+      const subH = qH * activeCfg.hosts;
+      const subP = qP * activeCfg.pcs;
+      const subPr = qPr * activeCfg.printers;
+      const subB = qB * activeCfg.badges;
+      const subV = qV * activeCfg.vip;
+      const subPl = activeCfg.platform;
+
+      // Values (sync inputs)
+      const activeEl = document.activeElement;
+      if (activeEl.id !== 'valAttendees') document.getElementById('valAttendees').value = qA;
+      if (activeEl.id !== 'valHosts') document.getElementById('valHosts').value = qH;
+      if (activeEl.id !== 'valPCs') document.getElementById('valPCs').value = qP;
+      if (activeEl.id !== 'valPrinters') document.getElementById('valPrinters').value = qPr;
+      if (activeEl.id !== 'valBadges') document.getElementById('valBadges').value = qB;
+      if (activeEl.id !== 'valVip') document.getElementById('valVip').value = qV;
+
+      // Subtotals in slider
+      document.getElementById('subAttendees').textContent = fmt(subA);
+      document.getElementById('subHosts').textContent = fmt(subH);
+      document.getElementById('subPCs').textContent = fmt(subP);
+      document.getElementById('subPrinters').textContent = fmt(subPr);
+      document.getElementById('subBadges').textContent = fmt(subB);
+      document.getElementById('subVip').textContent = fmt(subV);
+
+      // Unit price labels
+      document.getElementById('priceAttendees').textContent = activeCfg.attendees.toLocaleString('fr-DZ') + ' DZD / person';
+      document.getElementById('priceHosts').textContent = activeCfg.hosts.toLocaleString('fr-DZ') + ' DZD / person';
+      document.getElementById('pricePCs').textContent = activeCfg.pcs.toLocaleString('fr-DZ') + ' DZD / unit';
+      document.getElementById('pricePrinters').textContent = activeCfg.printers.toLocaleString('fr-DZ') + ' DZD / unit';
+      document.getElementById('priceBadges').textContent = activeCfg.badges.toLocaleString('fr-DZ') + ' DZD / badge';
+      document.getElementById('priceVip').textContent = activeCfg.vip.toLocaleString('fr-DZ') + ' DZD / VIP';
+
+      // Summary quantities
+      document.getElementById('lqAttendees').textContent = '×' + qA.toLocaleString('fr-DZ');
+      document.getElementById('lqHosts').textContent = '×' + qH;
+      document.getElementById('lqPCs').textContent = '×' + qP;
+      document.getElementById('lqPrinters').textContent = '×' + qPr;
+      document.getElementById('lqBadges').textContent = '×' + qB.toLocaleString('fr-DZ');
+      document.getElementById('lqVip').textContent = '×' + qV.toLocaleString('fr-DZ');
+
+      // Summary amounts
+      document.getElementById('laAttendees').textContent = fmt(subA);
+      document.getElementById('laHosts').textContent = fmt(subH);
+      document.getElementById('laPCs').textContent = fmt(subP);
+      document.getElementById('laPrinters').textContent = fmt(subPr);
+      document.getElementById('laBadges').textContent = fmt(subB);
+      document.getElementById('laVip').textContent = fmt(subV);
+      document.getElementById('laPlatform').textContent = fmt(subPl);
+
+      // Hide zero lines
+      ['Attendees', 'Hosts', 'PCs', 'Printers', 'Badges', 'Vip'].forEach(k => {
+        const qty = { Attendees: qA, Hosts: qH, PCs: qP, Printers: qPr, Badges: qB, Vip: qV }[k];
+        document.getElementById('li' + k).classList.toggle('hidden', qty === 0);
+      });
+
+      // Total
+      document.getElementById('totalAmount').innerHTML = total.toLocaleString('fr-DZ') + ' <span>DZD</span>';
+
+      // Profit
+      document.getElementById('valProfit').textContent = profit.toLocaleString('fr-DZ') + ' DZD';
+      document.getElementById('marginLabel').textContent = `Margin: ${margin}%`;
+
+      // Track fills
+      const pA = setTrack(document.getElementById('sliderAttendees'));
+      const pH = setTrack(document.getElementById('sliderHosts'));
+      const pP = setTrack(document.getElementById('sliderPCs'));
+      const pPr = setTrack(document.getElementById('sliderPrinters'));
+      const pB = setTrack(document.getElementById('sliderBadges'));
+      const pV = setTrack(document.getElementById('sliderVip'));
+
+      updateBar('barAttendees', pA);
+      updateBar('barHosts', pH);
+      updateBar('barPCs', pP);
+      updateBar('barPrinters', pPr);
+      updateBar('barBadges', pB);
+      updateBar('barVip', pV);
+    }
+
+    // ── PRICING CONFIG LISTENERS ────────────────────────────
+    ['cfgAttendees', 'cfgHosts', 'cfgPCs', 'cfgPrinters', 'cfgBadges', 'cfgVip', 'cfgPlatform'].forEach(id => {
+      document.getElementById(id).addEventListener('input', function () {
+        const map = {
+          cfgAttendees: 'attendees', cfgHosts: 'hosts', cfgPCs: 'pcs',
+          cfgPrinters: 'printers', cfgBadges: 'badges', cfgVip: 'vip', cfgPlatform: 'platform'
+        };
+        cfg[currentView][map[id]] = parseFloat(this.value) || 0;
+        update();
+      });
+    });
+
+    // ── SLIDER LISTENERS ────────────────────────────────────
+    ['sliderAttendees', 'sliderHosts', 'sliderPCs', 'sliderPrinters', 'sliderBadges', 'sliderVip'].forEach(id => {
+      document.getElementById(id).addEventListener('input', update);
+    });
+
+    // ── MANUAL INPUT LISTENERS ──────────────────────────────
+    ['valAttendees', 'valHosts', 'valPCs', 'valPrinters', 'valBadges', 'valVip'].forEach(id => {
+      document.getElementById(id).addEventListener('input', function () {
+        const sliderId = 'slider' + id.substring(3);
+        const slider = document.getElementById(sliderId);
+        slider.value = this.value;
+        update();
+      });
+    });
+
+    // ── PRINT ───────────────────────────────────────────────
+    function printQuote() {
+      window.print();
+    }
+
+    update();
+  </script>
+
+</body>
+
+</html>
